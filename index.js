@@ -193,17 +193,21 @@ ffmpegUfvPlatform.prototype.accessories = function(callback) {
 
                       var cameraSource = new UFV(hap, cameraConfig);
                       cameraAccessory.configureCameraSource(cameraSource);
-                      configuredAccessories.push(cameraAccessory);
 
                       // Setup the Motion Sensors for this camera
                       if (nvrConfig.motionSensors === false) {
                         self.log('Skipping '+discoveredCamera.name+' Motion Sensor due to NVR config "motionSensors" disabled.');
                       } else if (discoveredCamera.recordingSettings.motionRecordEnabled) {
                         debug('Setting up Motion Sensor for: ' + discoveredCamera.name);
-                        self.setupMotionSensor(hap, nvrConfig, discoveredNvr, server, discoveredCamera);
+                        motion = self.setupMotionSensor(hap, nvrConfig, discoveredNvr, server, discoveredCamera);
+                        if (motion) {
+                          cameraAccessory.addService(motion);
+                        }
                       } else {
                         self.log('Skipping Motion Sensor due to motion recording not enabled for: ' + discoveredCamera.name);
                       }
+
+                      configuredAccessories.push(cameraAccessory);
 
                       // Jump out of the loop once we have one:
                       channelIndex = discoveredChannels.length;
@@ -248,15 +252,6 @@ ffmpegUfvPlatform.prototype.setupMotionSensor = function (homebridge, nvrConfig,
   // Setup Motion Sensor for this camera.
   var accessory = MotionSensorAccessory.createAccessory(hap, nvrConfig, discoveredCamera, self.motionCache[nvrId]);
 
-  // Guarantee only one motion sensor for this camera
-  for (var i in self.accessories) {
-    var a = self.accessories[i];
-    if (accessory.username == a.username) {
-      accessory.destroy();
-      return;
-    }
-  }
-
   debug('Discovered Motion Sensor enabled camera ' + discoveredCamera.uuid);
 
   var properties = new Object({
@@ -269,7 +264,7 @@ ffmpegUfvPlatform.prototype.setupMotionSensor = function (homebridge, nvrConfig,
 
   Object.assign(accessory, properties);
 
-  this._accessories.push(accessory);
+  return(accessory);
   // this.api.registerPlatformAccessories("homebridge-camera-ffmpeg-ufv", "camera-ffmpeg-ufv", [newAccessory])
 }
 
