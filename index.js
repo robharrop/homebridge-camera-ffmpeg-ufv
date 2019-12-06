@@ -10,6 +10,7 @@ var qs = require('qs');
 var debug = require('debug')('camera-ffmpeg-ufv');
 var UFV = require('./ufv.js').UFV;
 var MotionSensorAccessory = require('./lib/motion-sensor-accessory');
+var MotionSensorService = require('./lib/motion-sensor-service');
 
 var API = require('./lib/util/api');
 const apiEndpoint = '/api/2.0';
@@ -199,8 +200,7 @@ ffmpegUfvPlatform.prototype.accessories = function(callback) {
                         self.log('Skipping '+discoveredCamera.name+' Motion Sensor due to NVR config "motionSensors" disabled.');
                       } else if (discoveredCamera.recordingSettings.motionRecordEnabled) {
                         debug('Setting up Motion Sensor for: ' + discoveredCamera.name);
-                      //  motion = self.setupMotionSensor(hap, nvrConfig, discoveredNvr, server, discoveredCamera);
-                        var motion = new Service.MotionSensor(discoveredCamera.name);
+                        motion = self.setupMotionService(hap, nvrConfig, discoveredNvr, server, discoveredCamera);
                         cameraAccessory.addService(motion);
                       } else {
                         self.log('Skipping Motion Sensor due to motion recording not enabled for: ' + discoveredCamera.name);
@@ -274,6 +274,19 @@ ffmpegUfvPlatform.prototype.setupMotionSensor = function (homebridge, nvrConfig,
 
   this._accessories.push(accessory);
   // this.api.registerPlatformAccessories("homebridge-camera-ffmpeg-ufv", "camera-ffmpeg-ufv", [newAccessory])
+}
+
+ffmpegUfvPlatform.prototype.setupMotionService = function (homebridge, nvrConfig, discoveredNvr, discoveredServer, discoveredCamera) {
+  var self = this;
+  // Setup Motion Status Caching
+  self.setupMotionCache(nvrConfig, discoveredNvr, discoveredServer, discoveredCamera);
+  var nvrId = UUIDGen.generate(discoveredNvr.nvrName + nvrConfig.apiHost);
+  // Setup Motion Sensor for this camera.
+  var service = MotionSensorService.createService(hap, nvrConfig, discoveredCamera, self.motionCache[nvrId]);
+
+  debug('Discovered Motion Sensor enabled camera ' + discoveredCamera.uuid);
+
+  return service;
 }
 
 ffmpegUfvPlatform.prototype.setupMotionCache = function (nvrConfig, discoveredNvr, discoveredServer, discoveredCamera) {
