@@ -9,7 +9,6 @@ var qs = require('qs');
 
 var debug = require('debug')('camera-ffmpeg-ufv');
 var UFV = require('./ufv.js').UFV;
-var MotionSensorAccessory = require('./lib/motion-sensor-accessory');
 var MotionSensorService = require('./lib/motion-sensor-service');
 
 var API = require('./lib/util/api');
@@ -241,39 +240,6 @@ ffmpegUfvPlatform.prototype.accessories = function(callback) {
     });
   }
 
-}
-
-ffmpegUfvPlatform.prototype.setupMotionSensor = function (homebridge, nvrConfig, discoveredNvr, discoveredServer, discoveredCamera) {
-  var self = this;
-  // Setup Motion Status Caching
-  self.setupMotionCache(nvrConfig, discoveredNvr, discoveredServer, discoveredCamera);
-  var nvrId = UUIDGen.generate(discoveredNvr.nvrName + nvrConfig.apiHost);
-  // Setup Motion Sensor for this camera.
-  var accessory = MotionSensorAccessory.createAccessory(hap, nvrConfig, discoveredCamera, self.motionCache[nvrId]);
-
-  // Guarantee only one motion sensor for this camera
-  for (var i in self.accessories) {
-    var a = self.accessories[i];
-    if (accessory.username == a.username) {
-      accessory.destroy();
-      return;
-    }
-  }
-
-  debug('Discovered Motion Sensor enabled camera ' + discoveredCamera.uuid);
-
-  var properties = new Object({
-    platform: self,
-    name: accessory.displayName,
-    getServices : function(){
-      return this.services;
-    }
-  });
-
-  Object.assign(accessory, properties);
-
-  this._accessories.push(accessory);
-  // this.api.registerPlatformAccessories("homebridge-camera-ffmpeg-ufv", "camera-ffmpeg-ufv", [newAccessory])
 }
 
 ffmpegUfvPlatform.prototype.setupMotionService = function (homebridge, nvrConfig, discoveredNvr, discoveredServer, discoveredCamera) {
