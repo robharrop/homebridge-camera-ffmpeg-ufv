@@ -301,7 +301,6 @@ UFV.prototype.handleStreamRequest = function(request) {
           '-vcodec', 'copy',
           '-an',
           '-f', 'rawvideo',
-          '-tune', 'zerolatency',
           '-bufsize', vbitrate +'k',
           '-payload_type', '99',
           '-ssrc', videoSsrc,
